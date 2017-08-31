@@ -1,0 +1,67 @@
+{
+  "description": "AmazonLinux: base tools",
+  "_comment"   : "userdata: amzn-ami-mininal-* DOES NOT have /bin/scp installed.",
+
+  "variables": {
+    "aws_access_key": "{{ env `AWS_ACCESS_KEY_ID`     }}",
+    "aws_secret_key": "{{ env `AWS_SECRET_ACCESS_KEY` }}",
+    "aws_profile"   : "{{ env `AWS_DEFAULT_PROFILE`   }}",
+    "ami_name"      : "",
+    "ami_date"      : ""
+  },
+
+  "builders": [
+    {
+      "type": "amazon-ebs",
+
+      "profile" : "{{ user `aws_default`    }}",
+
+      "region"         : "us-west-2",
+      "instance_type"  : "t2.micro",
+      "ami_name"       : "{{ user `ami_name` }}.{{ timestamp }}",
+      "ami_description": "Source: {{ .BuildRegion }}/{{ .SourceAMI }}",
+
+      "source_ami_filter": {
+        "filters": {
+          "name": "amzn-ami-*",
+          "virtualization-type": "hvm",
+          "root-device-type"   : "ebs"
+        },
+        "most_recent": true
+      },
+      "ssh_username": "ec2-user",
+
+      "run_tags": {
+        "OS"    : "AmazonLinux",
+        "Name"  : "{{ user `ami_name` }}.{{ user `ami_date` }}",
+        "Source": "{{ .BuildRegion }}/{{ .SourceAMI }}"
+      },
+      "tags": {
+        "OS"    : "AmazonLinux",
+        "Name"  : "{{ user `ami_name` }}.{{ user `ami_date` }}",
+        "Source": "{{ .BuildRegion }}/{{ .SourceAMI }}"
+      }
+
+    }
+
+  ],
+
+  "provisioners": [
+    {
+      "type": "file",
+      "source": "scripts/install.ec2-metadata.sh",
+      "destination": "/tmp/"
+    },
+    {
+      "type": "shell",
+      "inline": [
+        "sudo yum update -y",
+        "sudo yum install -y htop dstat traceroute",
+        "sudo yum install -y puppet3",
+        "sudo bash /tmp/install.ec2-metadata.sh"
+      ]
+    }
+  ]
+
+}
+
